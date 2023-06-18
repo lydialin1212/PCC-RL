@@ -51,23 +51,30 @@ gamma = arg_or_default("--gamma", default=0.99)
 print("gamma = %f" % gamma)
 model = PPO1(MyMlpPolicy, env, verbose=1, schedule='constant', timesteps_per_actorbatch=8192, optim_batchsize=2048, gamma=gamma)
 
-for i in range(0, 6):
+for i in range(0, 0):
     with model.graph.as_default():                                                                   
         saver = tf.train.Saver()                                                                     
         saver.save(training_sess, "./pcc_model_%d.ckpt" % i)
     model.learn(total_timesteps=(1600 * 410))
 
 
+<<<<<<< Updated upstream
 saver = tf.train.Saver()
 save_path = "./pcc_model_5.ckpt"
 saver.restore(model.sess, save_path)
 
 
 
+=======
+with model.graph.as_default():                                                                   
+    saver = tf.train.Saver() 
+    save_path = "./pcc_model_5.ckpt"
+    saver.restore(model.sess, save_path) 
+>>>>>>> Stashed changes
 ##
 #   Save the model to the location specified below.
 ##
-default_export_dir = "/tmp/pcc_saved_models/model_A/"
+default_export_dir = "./pcc_saved_models/model_A/"
 export_dir = arg_or_default("--model-dir", default=default_export_dir)
 with model.graph.as_default():
 
