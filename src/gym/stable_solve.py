@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import gym
+import network_sim
 import torch
 
 from stable_baselines3 import PPO
@@ -30,18 +31,23 @@ from common.simple_arg_parse import arg_or_default
 input_size = 5
 
 class CustomNetwork(torch.nn.Module):
-    def __init__(self, input_size=input_size):
+    def __init__(self, feature_dim: int = 30,
+        last_layer_dim_pi: int = 1,
+        last_layer_dim_vf: int = 1,):
         super().__init__()
+        self.latent_dim_pi = last_layer_dim_pi
+        self.latent_dim_vf = last_layer_dim_vf
+
         self.policy_net = torch.nn.Sequential(
-            torch.nn.Linear(input_size, 32),
+            torch.nn.Linear(feature_dim, 32),
             torch.nn.Linear(32, 16),
-            torch.nn.Linear(16, 1),
+            torch.nn.Linear(16, last_layer_dim_pi),
             torch.nn.Tanh()
         )
         self.value_net = torch.nn.Sequential(
-            torch.nn.Linear(input_size, 32),
+            torch.nn.Linear(feature_dim, 32),
             torch.nn.Linear(32, 16),
-            torch.nn.Linear(16, 1),
+            torch.nn.Linear(16, last_layer_dim_vf),
             torch.nn.Tanh()
         )
 
@@ -55,34 +61,28 @@ class CustomNetwork(torch.nn.Module):
         return self.value_net(features)
 
 
-
-global TrainCustomNetwork
-
 class MyMlpPolicy(ActorCriticPolicy):
     def __init__(self, observation_space, action_space, lr_schedule,
-                 custom_param, *args, **kwargs):
+                 *args, **kwargs):
         super().__init__(observation_space, action_space, lr_schedule, *args,
                          **kwargs)
-        print('custom_param=', custom_param)
         self.ortho_init = False
 
     def _build_mlp_extractor(self) -> None:
-        TrainCustomNetwork = CustomNetwork()
-        self.mlp_extractor = TrainCustomNetwork
+        self.mlp_extractor = CustomNetwork()
 
 
 env = gym.make('PccNs-v0')
 
-
 gamma = arg_or_default("--gamma", default=0.99)
 print("gamma = %f" % gamma)
-model = PPO(MyMlpPolicy, env, verbose=1, batch_size=2048, gamma=gamma)
+model = PPO(MyMlpPolicy, env, learning_rate=0.0001, verbose=1, batch_size=2048, n_steps=8192, gamma=gamma)
 
 
 MODEL_PATH = "./pcc_model_%d.pt"
 for i in range(0, 6):
     model.learn(total_timesteps=(1600 * 410))
-    torch.save(TrainCustomNetwork.state_dict(), MODEL_PATH % i)
+    torch.save(model.policy.state_dict(), MODEL_PATH % i)
 
 
 

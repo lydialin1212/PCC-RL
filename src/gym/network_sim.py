@@ -373,12 +373,14 @@ class SimulatedNetworkEnv(gym.Env):
         self.last_thpt = None
         self.last_rate = None
 
+        # action space
         if USE_CWND:
             self.action_space = spaces.Box(np.array([-1e12, -1e12]), np.array([1e12, 1e12]), dtype=np.float32)
         else:
             self.action_space = spaces.Box(np.array([-1e12]), np.array([1e12]), dtype=np.float32)
                    
 
+        # observation space
         self.observation_space = None
         use_only_scale_free = True
         single_obs_min_vec = sender_obs.get_min_obs_vector(self.features)

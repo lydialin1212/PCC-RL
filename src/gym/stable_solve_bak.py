@@ -57,6 +57,13 @@ for i in range(0, 6):
         saver.save(training_sess, "./pcc_model_%d.ckpt" % i)
     model.learn(total_timesteps=(1600 * 410))
 
+
+saver = tf.train.Saver()
+save_path = "./pcc_model_5.ckpt"
+saver.restore(model.sess, save_path)
+
+
+
 ##
 #   Save the model to the location specified below.
 ##
