@@ -30,6 +30,8 @@ sys.path.insert(0,parentdir)
 from common import sender_obs, config
 from common.simple_arg_parse import arg_or_default
 
+K=5
+
 MAX_CWND = 5000
 MIN_CWND = 4
 
@@ -343,7 +345,7 @@ class Sender():
 class SimulatedNetworkEnv(gym.Env):
     
     def __init__(self,
-                 history_len=arg_or_default("--history-len", default=10),
+                 history_len=arg_or_default("--history-len", default=K),
                  features=arg_or_default("--input-features",
                     default="sent latency inflation,"
                           + "latency ratio,"
@@ -483,7 +485,7 @@ class SimulatedNetworkEnv(gym.Env):
         self.reward_ewma += 0.01 * self.reward_sum
         self.rewards.append(self.reward_ewma)
         if (self.episodes_run+1) % 100 == 0:
-            np.save("records.npy", np.array(self.rewards))
+            np.save("records_k5.npy", np.array(self.rewards))
         print("Reward: %0.2f, Ewma Reward: %0.2f" % (self.reward_sum, self.reward_ewma))
         self.reward_sum = 0.0
         return self._get_all_sender_obs()

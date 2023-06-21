@@ -15,6 +15,8 @@
 import gym
 import network_sim
 import torch
+import random
+import numpy as np
 
 from stable_baselines3 import PPO
 from stable_baselines3.common.policies import ActorCriticPolicy
@@ -29,9 +31,18 @@ from common.simple_arg_parse import arg_or_default
 
 
 input_size = 5
+K=5
+
+def setup_seed(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+setup_seed(20)
 
 class CustomNetwork(torch.nn.Module):
-    def __init__(self, feature_dim: int = 30,
+    def __init__(self, feature_dim: int = K*3,
         last_layer_dim_pi: int = 1,
         last_layer_dim_vf: int = 1,):
         super().__init__()
@@ -76,7 +87,7 @@ env = gym.make('PccNs-v0')
 
 gamma = arg_or_default("--gamma", default=0.99)
 print("gamma = %f" % gamma)
-model = PPO(MyMlpPolicy, env, learning_rate=0.0001, verbose=1, batch_size=2048, n_steps=8192, gamma=gamma)
+model = PPO(MyMlpPolicy, env, learning_rate=0.0003, verbose=1, batch_size=2048, n_steps=8192, gamma=gamma)
 
 
 MODEL_PATH = "./pcc_model_%d.pt"
