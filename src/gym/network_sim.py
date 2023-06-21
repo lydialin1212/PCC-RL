@@ -282,7 +282,6 @@ class Sender():
 
     def set_cwnd(self, new_cwnd):
         self.cwnd = int(new_cwnd)
-        #print("Attempt to set new rate to %f (min %f, max %f)" % (new_rate, MIN_RATE, MAX_RATE))
         if self.cwnd > MAX_CWND:
             self.cwnd = MAX_CWND
         if self.cwnd < MIN_CWND:
@@ -378,7 +377,8 @@ class SimulatedNetworkEnv(gym.Env):
             self.action_space = spaces.Box(np.array([-1e12, -1e12]), np.array([1e12, 1e12]), dtype=np.float32)
         else:
             self.action_space = spaces.Box(np.array([-1e12]), np.array([1e12]), dtype=np.float32)
-                   
+
+        self.rewards = []
 
         # observation space
         self.observation_space = None
@@ -481,6 +481,9 @@ class SimulatedNetworkEnv(gym.Env):
         self.net.run_for_dur(self.run_dur)
         self.reward_ewma *= 0.99
         self.reward_ewma += 0.01 * self.reward_sum
+        self.rewards.append(self.reward_ewma)
+        if (self.episodes_run+1) % 100 == 0:
+            np.save("records.npy", np.array(self.rewards))
         print("Reward: %0.2f, Ewma Reward: %0.2f" % (self.reward_sum, self.reward_ewma))
         self.reward_sum = 0.0
         return self._get_all_sender_obs()
