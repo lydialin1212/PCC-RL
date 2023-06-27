@@ -30,7 +30,7 @@ sys.path.insert(0,parentdir)
 from common import sender_obs, config
 from common.simple_arg_parse import arg_or_default
 
-K=5
+K=1
 
 MAX_CWND = 5000
 MIN_CWND = 4
@@ -485,7 +485,7 @@ class SimulatedNetworkEnv(gym.Env):
         self.reward_ewma += 0.01 * self.reward_sum
         self.rewards.append(self.reward_ewma)
         if (self.episodes_run+1) % 100 == 0:
-            np.save("records_k5.npy", np.array(self.rewards))
+            np.save("records_k%d.npy" % K, np.array(self.rewards))
         print("Reward: %0.2f, Ewma Reward: %0.2f" % (self.reward_sum, self.reward_ewma))
         self.reward_sum = 0.0
         return self._get_all_sender_obs()
