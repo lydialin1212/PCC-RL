@@ -30,7 +30,7 @@ sys.path.insert(0,parentdir)
 from common.simple_arg_parse import arg_or_default
 
 
-K=1
+K=10
 
 class CustomNetwork(torch.nn.Module):
     def __init__(self, feature_dim: int = K*3,

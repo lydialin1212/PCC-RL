@@ -12,67 +12,60 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
 import numpy as np
 import io
+import torch
+
+K=10
+
+class CustomNetwork(torch.nn.Module):
+    def __init__(self, feature_dim: int = K*3,
+        last_layer_dim_pi: int = 1,
+        last_layer_dim_vf: int = 1,):
+        super().__init__()
+        self.latent_dim_pi = last_layer_dim_pi
+        self.latent_dim_vf = last_layer_dim_vf
+
+        self.policy_net = torch.nn.Sequential(
+            torch.nn.Linear(feature_dim, 32),
+            torch.nn.Linear(32, 16),
+            torch.nn.Linear(16, last_layer_dim_pi),
+            torch.nn.Tanh()
+        )
+        self.value_net = torch.nn.Sequential(
+            torch.nn.Linear(feature_dim, 32),
+            torch.nn.Linear(32, 16),
+            torch.nn.Linear(16, last_layer_dim_vf),
+            torch.nn.Tanh()
+        )
+
+    def forward(self, features):
+        return self.forward_actor(features)
+
+
 
 class LoadedModel():
 
     def __init__(self, model_path):
-        self.sess = tf.Session()
         self.model_path = model_path
-        self.metagraph = tf.saved_model.loader.load(self.sess,
-            [tf.saved_model.tag_constants.SERVING], self.model_path)
-        sig = self.metagraph.signature_def["serving_default"]
-        input_dict = dict(sig.inputs)
-        output_dict = dict(sig.outputs)       
- 
-        self.input_obs_label = input_dict["ob"].name
-        self.input_state_label = None
-        self.initial_state = None
-        self.state = None
-        if "state" in input_dict.keys():
-            self.input_state_label = input_dict["state"].name
-            strfile = io.StringIO()
-            print(input_dict["state"].tensor_shape, file=strfile)
-            lines = strfile.getvalue().split("\n")
-            dim_1 = int(lines[1].split(":")[1].strip(" "))
-            dim_2 = int(lines[4].split(":")[1].strip(" "))
-            self.initial_state = np.zeros((dim_1, dim_2), dtype=np.float32)
-            self.state = np.zeros((dim_1, dim_2), dtype=np.float32)
- 
-        self.output_act_label = output_dict["act"].name
-        self.output_stochastic_act_label = None
-        if "stochastic_act" in output_dict.keys():
-            self.output_stochastic_act_label = output_dict["stochastic_act"].name
 
-        self.mask = None
-        self.input_mask_label = None 
-        if "mask" in input_dict.keys():
-            self.input_mask_label = input_dict["mask"].name
-            self.mask = np.ones((1, 1)).reshape((1,))
+        self.initial_state = np.zeros((K, 3), dtype=np.float32)
+        self.state = np.zeros((K, 3), dtype=np.float32)
 
-    def reset_state(self):      
+        self.model = CustomNetwork()
+        self.model.load_state_dict(torch.load(model_path))
+        self.model.eval()
+
+    def reset_state(self):
         self.state = np.copy(self.initial_state)
 
     def reload(self):
-        self.metagraph = tf.saved_model.loader.load(self.sess,
-            [tf.saved_model.tag_constants.SERVING], self.model_path)
- 
+        self.model = CustomNetwork()
+        self.model.load_state_dict(torch.load(self.model_path))
+        self.model.eval()
+
     def act(self, obs, stochastic=False):
-        input_dict = {self.input_obs_label:obs}
-        if self.state is not None:
-            input_dict[self.input_state_label] = self.state
-
-        if self.mask is not None:
-            input_dict[self.input_mask_label] = self.mask
-
-        sess_output = None
-        if stochastic:
-            sess_output = self.sess.run(self.output_stochastic_act_label, feed_dict=input_dict)
-        else:
-            sess_output = self.sess.run(self.output_act_label, feed_dict=input_dict)
+        sess_output = self.model.forward(obs)
 
         action = None
         if len(sess_output) > 1:
@@ -80,11 +73,10 @@ class LoadedModel():
         else:
             action = sess_output
 
-        return {"act":action}
+        return {"act": action}
 
 
 class LoadedModelAgent():
-
     def __init__(self, model_path):
         self.model = LoadedModel(model_path)
 
@@ -92,8 +84,7 @@ class LoadedModelAgent():
         self.model.reset_state()
 
     def act(self, ob):
-
-        act_dict = self.model.act(ob.reshape(1,-1), stochastic=False)
+        act_dict = self.model.act(ob.reshape(1, -1), stochastic=False)
 
         ac = act_dict["act"]
         vpred = act_dict["vpred"] if "vpred" in act_dict.keys() else None
