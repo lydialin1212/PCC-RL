@@ -35,7 +35,7 @@ K=10
 class CustomNetwork(torch.nn.Module):
     def __init__(self, feature_dim: int = K*3,
         last_layer_dim_pi: int = 1,
-        last_layer_dim_vf: int = 1,):
+        last_layer_dim_vf: int = 1):
         super().__init__()
         self.latent_dim_pi = last_layer_dim_pi
         self.latent_dim_vf = last_layer_dim_vf
@@ -81,7 +81,7 @@ print("gamma = %f" % gamma)
 model = PPO(MyMlpPolicy, env, seed=20, learning_rate=0.0001, verbose=1, batch_size=2048, n_steps=8192, gamma=gamma)
 
 
-MODEL_PATH = "./pcc_model_%d.pt"
+MODEL_PATH = f"./pcc_model{K}_%d.pt"
 for i in range(0, 6):
     model.learn(total_timesteps=(1600 * 410))
     torch.save(model.policy.state_dict(), MODEL_PATH % i)

@@ -30,7 +30,7 @@ sys.path.insert(0,parentdir)
 from common import sender_obs, config
 from common.simple_arg_parse import arg_or_default
 
-K=1
+K=10
 
 MAX_CWND = 5000
 MIN_CWND = 4
