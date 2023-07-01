@@ -43,7 +43,6 @@ class CustomNetwork(torch.nn.Module):
         return self.forward_actor(features)
 
     def forward_actor(self, features):
-        print(features.size())
         return self.policy_net(features)
 
 
@@ -76,8 +75,8 @@ class LoadedModel():
         if len(sess_output) > 1:
             action, self.state = sess_output
         else:
-            action = sess_output
-
+            action = sess_output.detach().numpy()
+        
         return {"act": action}
 
 
@@ -90,9 +89,7 @@ class LoadedModelAgent():
 
     def act(self, ob):
         act_dict = self.model.act(ob.reshape(1, -1), stochastic=False)
-
-        ac = act_dict["act"]
+        act = act_dict["act"]
         vpred = act_dict["vpred"] if "vpred" in act_dict.keys() else None
         state = act_dict["state"] if "state" in act_dict.keys() else None
-
-        return ac[0][0]
+        return act[0][0]
