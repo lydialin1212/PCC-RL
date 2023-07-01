@@ -42,6 +42,10 @@ class CustomNetwork(torch.nn.Module):
     def forward(self, features):
         return self.forward_actor(features)
 
+    def forward_actor(self, features):
+        print(features.size())
+        return self.policy_net(features)
+
 
 
 class LoadedModel():
@@ -53,7 +57,7 @@ class LoadedModel():
         self.state = np.zeros((K, 3), dtype=np.float32)
 
         self.model = CustomNetwork()
-        self.model.load_state_dict(torch.load(model_path))
+        self.model.load_state_dict(torch.load(model_path), strict=False)
         self.model.eval()
 
     def reset_state(self):
@@ -65,6 +69,7 @@ class LoadedModel():
         self.model.eval()
 
     def act(self, obs, stochastic=False):
+        obs = torch.from_numpy(obs).to(torch.float32)
         sess_output = self.model.forward(obs)
 
         action = None
