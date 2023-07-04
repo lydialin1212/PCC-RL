@@ -62,6 +62,37 @@ class CustomNetwork(torch.nn.Module):
     def forward_critic(self, features):
         return self.value_net(features)
 
+class CustomNetwork_hard(torch.nn.Module):
+    def __init__(self, feature_dim: int = K*3,
+        last_layer_dim_pi: int = 1,
+        last_layer_dim_vf: int = 1):
+        super().__init__()
+        self.latent_dim_pi = last_layer_dim_pi
+        self.latent_dim_vf = last_layer_dim_vf
+
+        self.policy_net = torch.nn.Sequential(
+            torch.nn.Linear(feature_dim, 32),
+            torch.nn.Conv1d(1, 32, 1),
+            torch.nn.Linear(32, 16),
+            torch.nn.Linear(16, last_layer_dim_pi),
+            torch.nn.ReLU()
+        )
+        self.value_net = torch.nn.Sequential(
+            torch.nn.Linear(feature_dim, 32),
+            torch.nn.Linear(32, 16),
+            torch.nn.Linear(16, last_layer_dim_vf),
+            torch.nn.Tanh()
+        )
+
+    def forward(self, features):
+        return self.forward_actor(features), self.forward_critic(features)
+
+    def forward_actor(self, features):
+        return self.policy_net(features)
+
+    def forward_critic(self, features):
+        return self.value_net(features)
+
 
 class MyMlpPolicy(ActorCriticPolicy):
     def __init__(self, observation_space, action_space, lr_schedule=0.0001,
@@ -81,7 +112,7 @@ print("gamma = %f" % gamma)
 model = PPO(MyMlpPolicy, env, seed=20, learning_rate=0.0001, verbose=1, batch_size=2048, n_steps=8192, gamma=gamma)
 
 
-MODEL_PATH = f"./pcc_model{K}_%d.pt"
+MODEL_PATH = f"./pcc_model_Relu_{K}_%d.pt"
 for i in range(0, 6):
     model.learn(total_timesteps=(1600 * 410))
     torch.save(model.policy.state_dict(), MODEL_PATH % i)
